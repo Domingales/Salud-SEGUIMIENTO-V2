@@ -1,0 +1,10 @@
+/* assets/css/print.css */
+@media print{
+  body{background:#fff !important; color:#000 !important}
+  .sidebar,.topbar,.footer,.btn,.modal{display:none !important}
+  .main{display:block}
+  .content{padding:0 !important}
+  .card{box-shadow:none !important; border:1px solid #ddd !important; background:#fff !important}
+  table{background:#fff !important}
+  th,td{border:1px solid #ddd !important}
+}

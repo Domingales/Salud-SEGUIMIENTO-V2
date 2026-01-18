@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Salud - Fichas de pacientes</title>
+  <link rel="stylesheet" href="assets/css/app.css" />
+</head>
+<body>
+  <div id="app" class="app">
+    <aside id="sidebar" class="sidebar" aria-label="Panel de acciones">
+      <div class="brand">
+        <div class="brandTitle">Salud</div>
+        <div class="brandSub">Fichas y registros</div>
+      </div>
+
+      <div class="block">
+        <div class="label">Paciente</div>
+        <select id="patientSelect" class="input"></select>
+        <div class="row gap8 mt8">
+          <button id="btnAddPatient" class="btn btnPrimary">Añadir</button>
+          <button id="btnEditPatient" class="btn">Editar</button>
+        </div>
+      </div>
+
+      <div class="block">
+        <div class="label">Acciones</div>
+        <div class="stack">
+          <button id="btnNewRecord" class="btn btnSuccess">Añadir registro</button>
+          <button id="btnReport" class="btn">Informe médico</button>
+          <button id="btnExport" class="btn">Exportar</button>
+          <button id="btnImport" class="btn">Importar</button>
+          <button id="btnSettings" class="btn">Ajustes</button>
+          <button id="btnGlossary" class="btn">¿Qué es…?</button>
+          <button id="btnChart" class="btn">Gráfico</button>
+        </div>
+      </div>
+
+      <div class="block">
+        <div class="hint">
+          Nota: esta app no sustituye la valoración de un profesional sanitario. Si hay síntomas agudos o valores muy elevados, consulta atención médica.
+        </div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <div id="pageTitle" class="pageTitle">Panel</div>
+          <div id="pageSub" class="pageSub">Selecciona un paciente para ver su ficha.</div>
+        </div>
+        <div class="row gap8">
+          <button id="btnQuickPrint" class="btn">Imprimir</button>
+          <button id="btnQuickCopyExcel" class="btn">Copiar a Excel</button>
+        </div>
+      </header>
+
+      <section class="content">
+        <div id="viewPanel" class="view"></div>
+      </section>
+
+      <footer class="footer">
+        <span id="dataStatus" class="muted"></span>
+      </footer>
+    </main>
+  </div>
+
+  <!-- Modal genérico -->
+  <div id="modal" class="modal hidden" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modalBackdrop" data-close="1"></div>
+    <div class="modalCard" role="document" aria-label="Diálogo">
+      <div class="modalHeader">
+        <div id="modalTitle" class="modalTitle">Título</div>
+        <button class="iconBtn" id="modalClose" aria-label="Cerrar">✕</button>
+      </div>
+      <div id="modalBody" class="modalBody"></div>
+      <div id="modalActions" class="modalActions"></div>
+    </div>
+  </div>
+
+  <script src="assets/js/storage.js"></script>
+  <script src="assets/js/analysis.js"></script>
+  <script src="assets/js/export.js"></script>
+  <script src="assets/js/glossary.js"></script>
+  <script src="assets/js/chart.js"></script>
+  <script src="assets/js/ui.js"></script>
+  <script src="assets/js/app.js"></script>
+</body>
+</html>
