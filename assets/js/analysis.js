@@ -640,6 +640,104 @@
     return summary;
   }
 
+  // -------------------------
+  // Score orientativo del estado del registro (0–100)
+  // - Se usa para visualizaciones (p. ej., corazones en el panel).
+  // - No es un diagnóstico.
+  // - NO inventa datos: si un dato opcional no existe (p. ej. glucosa), no se usa.
+  // - El cálculo es deliberadamente simple y conservador.
+  // -------------------------
+  function clamp(n, a, b){
+    if(!Number.isFinite(n)) return a;
+    return Math.max(a, Math.min(b, n));
+  }
+
+  function healthPercentForRecord(patient, record){
+    if(!record) return null;
+
+    const sys = toNum(record.bpSys);
+    const dia = toNum(record.bpDia);
+    const hr  = toNum(record.hr);
+    const w   = toNum(record.weight);
+    const sp  = (record.spo2==null ? null : toNum(record.spo2));
+    const g   = (record.glucose==null ? null : toNum(record.glucose));
+    const gctx = record.glucoseContext || "unknown";
+
+    const parts = []; // {score, weight}
+
+    // TA (ESC/ESH)
+    const bp = bpCategoryESC(sys, dia);
+    const bpScore = (
+      bp.key === "optimal" ? 100 :
+      bp.key === "normal" ? 90 :
+      bp.key === "high_normal" ? 75 :
+      bp.key === "grade1" ? 55 :
+      bp.key === "grade2" ? 35 :
+      bp.key === "grade3" ? 15 :
+      null
+    );
+    if(bpScore!=null) parts.push({score: bpScore, weight: 0.45});
+
+    // FC
+    const hrc = hrCategory(hr);
+    const hrScore = (
+      hrc.key === "normal" ? 90 :
+      (hrc.key === "low" || hrc.key === "high") ? 65 :
+      null
+    );
+    if(hrScore!=null) parts.push({score: hrScore, weight: 0.25});
+
+    // IMC (requiere altura)
+    const b = bmi(patient?.heightCm, w);
+    const bc = bmiCategory(b);
+    const bmiScore = (
+      bc.key === "normal" ? 85 :
+      (bc.key === "under" || bc.key === "over") ? 65 :
+      bc.key === "obese" ? 40 :
+      null
+    );
+    if(bmiScore!=null) parts.push({score: bmiScore, weight: 0.15});
+
+    // SpO2 (opcional)
+    if(sp!=null){
+      const sc = spo2Category(sp);
+      const spScore = (
+        sc.key === "normal" ? 95 :
+        sc.key === "borderline" ? 70 :
+        sc.key === "low" ? 35 :
+        null
+      );
+      if(spScore!=null) parts.push({score: spScore, weight: 0.10});
+    }
+
+    // Glucosa (opcional)
+    if(g!=null){
+      const gc = glucoseCategory(g, gctx);
+      const gScore = (
+        (gc.key === "normal" || gc.key === "ok") ? 85 :
+        (gc.key === "predm" || gc.key === "elev") ? 60 :
+        (gc.key === "dm" || gc.key === "high") ? 30 :
+        (gc.key === "low") ? 50 :
+        55
+      );
+      parts.push({score: gScore, weight: 0.05});
+    }
+
+    if(!parts.length) return null;
+    let sw = 0, ss = 0;
+    for(const p of parts){ sw += p.weight; ss += p.score * p.weight; }
+    if(sw <= 0) return null;
+    const pct = ss / sw;
+    return clamp(Math.round(pct), 0, 100);
+  }
+
+  function healthToneFromPercent(pct){
+    if(pct==null) return {tone:"warn", label:"Sin datos"};
+    if(pct >= 80) return {tone:"good", label:"Óptimo"};
+    if(pct >= 50) return {tone:"warn", label:"Normal"};
+    return {tone:"bad", label:"Bajo"};
+  }
+
   global.HealthAnalysis = {
     bpCategoryACC, bpCategoryESC,
     hrCategory, spo2Category,
@@ -649,6 +747,8 @@
     sortRecordsDesc,
     buildMedicalReport,
     buildTimelineSummary,
+    healthPercentForRecord,
+    healthToneFromPercent,
     fmt0, fmt1, dateLabel
   };
 })(window);

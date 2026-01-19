@@ -101,6 +101,7 @@
         UI.el("div",{class:"muted small",style:"margin-top:4px"},
           `Edad: ${p.age ?? "—"} · Sexo: ${p.sex || "—"} · Altura: ${p.heightCm ?? "—"} cm · Registros: ${(p.records||[]).length}`
         ),
+        healthHeartsLine(p, last),
         p.medications ? UI.el("div",{class:"muted small",style:"margin-top:4px"}, `Medicación (según paciente): ${p.medications}`) : null
       ]),
       UI.el("div",{},[
@@ -213,6 +214,36 @@
     box.appendChild(UI.el("div",{class:"kpiVal"}, value));
     box.appendChild(UI.el("div",{style:"margin-top:8px"}, rightEl));
     return box;
+  }
+
+  // Línea de 10 corazones (panel) para representar el estado del ÚLTIMO registro.
+  // Regla visual solicitada:
+  // - 10 corazones totales.
+  // - Se rellenan según porcentaje 0–100 (≈1 corazón por 10%).
+  // - Los 3 primeros (izquierda) son rojos, los 3 siguientes naranja, los 4 últimos verde.
+  // - Los no rellenados quedan en blanco.
+  function healthHeartsLine(patient, record){
+    const pct = HealthAnalysis.healthPercentForRecord(patient, record);
+    const t = HealthAnalysis.healthToneFromPercent(pct);
+    const wrap = UI.el("div",{class:"heartsLine"});
+
+    const label = UI.el("div",{class:"muted small", style:"margin-top:6px"},
+      `Salud (último registro): ${pct==null ? "—" : (pct+"%")}${pct==null ? "" : (" · " + t.label)}`
+    );
+    wrap.appendChild(label);
+
+    const row = UI.el("div",{class:"heartsRow"});
+    const filled = pct==null ? 0 : Math.max(0, Math.min(10, Math.round(pct/10)));
+    for(let i=1;i<=10;i++){
+      if(i <= filled){
+        const cls = (i<=3) ? "red" : (i<=6) ? "orange" : "green";
+        row.appendChild(UI.el("span",{class:`heart fill ${cls}`}, "♥"));
+      }else{
+        row.appendChild(UI.el("span",{class:"heart empty"}, "♡"));
+      }
+    }
+    wrap.appendChild(row);
+    return wrap;
   }
 
   function openPatientModal(mode="add"){

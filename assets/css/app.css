@@ -215,3 +215,12 @@ tr:hover td{background: rgba(255,255,255,.03)}
   .modal{padding: 3vh 10px;}
   .modalCard{max-height: calc(100vh - 6vh);}
 }
+
+/* Panel: línea de corazones (estado de salud del último registro) */
+.heartsLine{margin-top:2px}
+.heartsRow{margin-top:6px; display:flex; gap:3px; align-items:center; flex-wrap:wrap}
+.heart{font-size:18px; line-height:1; user-select:none}
+.heart.empty{color: rgba(255,255,255,.45)}
+.heart.fill.red{color:#ef4444}
+.heart.fill.orange{color:#f59e0b}
+.heart.fill.green{color:#22c55e}
