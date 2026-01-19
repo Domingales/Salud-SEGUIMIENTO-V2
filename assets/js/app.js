@@ -566,6 +566,7 @@
       UI.el("button",{class:"btn", onclick: ()=>exportPatientTXT(p)},"Paciente · TXT"),
       UI.el("button",{class:"btn", onclick: ()=>exportPatientCSV(p)},"Paciente · CSV"),
       UI.el("button",{class:"btn", onclick: ()=>copyExcel(p)},"Paciente · Copiar Excel"),
+      UI.el("button",{class:"btn", onclick: ()=>copyAllJSON()},"Todo · Copiar JSON"),
       UI.el("button",{class:"btn btnPrimary", onclick: ()=>exportAllJSON()},"Todo · Backup JSON")
     ];
     UI.modal.open({title:"Exportar", body, actions});
@@ -614,35 +615,87 @@
     ExportHub.downloadText(`salud_backup_${new Date().toISOString().slice(0,10)}.json`, JSON.stringify(payload,null,2), "application/json");
   }
 
+  async function copyAllJSON(){
+    try{
+      const payload = await StorageHub.exportAll();
+      const text = JSON.stringify(payload);
+      const ok = await ExportHub.copyToClipboard(text);
+      UI.toast(ok ? "Backup copiado al portapapeles." : "No se pudo copiar al portapapeles.");
+    }catch(e){
+      UI.toast("Error copiando: " + (e?.message || e));
+    }
+  }
+
+
   function openImport(){
     const body = UI.el("div",{},[]);
     body.appendChild(UI.el("div",{class:"note"},
-      "Importa un archivo .json exportado por esta app. Sustituirá los datos actuales."
+      "Importa un backup JSON exportado por esta app. Sustituirá los datos actuales."
     ));
-    const file = UI.el("input",{type:"file", accept:".json,application/json", class:"input", style:"margin-top:10px"});
+
+    body.appendChild(UI.el("div",{class:"hr", style:"margin-top:10px"}));
+
+    // Opción A: archivo
+    body.appendChild(UI.el("div",{class:"label"},"1) Importar desde archivo"));
+    const file = UI.el("input",{type:"file", accept:".json,application/json", class:"input", style:"margin-top:8px"});
     body.appendChild(file);
+
+    // Opción B: pegar JSON
+    body.appendChild(UI.el("div",{class:"label", style:"margin-top:14px"},"2) Pegar JSON (portapapeles)"));
+    body.appendChild(UI.el("div",{class:"note"},
+      "Puedes pegar aquí el JSON que hayas copiado desde otra instalación de la app (Exportar → Todo · Copiar JSON)."
+    ));
+    const paste = UI.el("textarea",{class:"input", id:"pasteJson", style:"margin-top:8px; min-height:130px; resize:vertical;",
+      placeholder:"Pega aquí el contenido JSON completo del backup…"
+    });
+    body.appendChild(paste);
+
+    const pasteBtn = UI.el("button",{class:"btn", style:"margin-top:8px", onclick: async ()=>{
+      try{
+        const t = await navigator.clipboard.readText();
+        if(!t){ UI.toast("El portapapeles está vacío."); return; }
+        paste.value = t;
+        UI.toast("Pegado desde portapapeles.");
+      }catch(_){
+        UI.toast("No se pudo leer el portapapeles. Pega manualmente (Ctrl+V) en el cuadro.");
+      }
+    }},"Pegar desde portapapeles");
+    body.appendChild(pasteBtn);
+
+    async function doImport(text){
+      const payload = JSON.parse(text);
+      await StorageHub.importAll(payload);
+      state.data = await StorageHub.loadData();
+      state.settings = StorageHub.loadSettings();
+      ensureSelectedPatient();
+      await saveAll();
+      upsertPatientInSelect();
+      UI.modal.close();
+      viewPanel();
+      UI.toast("Importación completada.");
+    }
 
     const actions = [
       UI.el("button",{class:"btn", onclick: ()=>UI.modal.close()},"Cancelar"),
-      UI.el("button",{class:"btn btnPrimary", onclick: async ()=>{
+      UI.el("button",{class:"btn", onclick: async ()=>{
         const f = file.files?.[0];
         if(!f){ UI.toast("Selecciona un archivo JSON."); return; }
-        const text = await f.text();
         try{
-          const payload = JSON.parse(text);
-          await StorageHub.importAll(payload);
-          state.data = await StorageHub.loadData();
-          state.settings = StorageHub.loadSettings();
-          ensureSelectedPatient();
-          saveAll();
-          upsertPatientInSelect();
-          UI.modal.close();
-          viewPanel();
-          UI.toast("Importación completada.");
+          const text = await f.text();
+          await doImport(text);
         }catch(e){
-          UI.toast("Error importando: " + (e?.message || e));
+          UI.toast("Error importando archivo: " + (e?.message || e));
         }
-      }},"Importar y sustituir")
+      }},"Importar archivo"),
+      UI.el("button",{class:"btn btnPrimary", onclick: async ()=>{
+        const text = (paste.value || "").trim();
+        if(!text){ UI.toast("Pega un JSON válido en el cuadro."); return; }
+        try{
+          await doImport(text);
+        }catch(e){
+          UI.toast("Error importando pegado: " + (e?.message || e));
+        }
+      }},"Importar pegado")
     ];
     UI.modal.open({title:"Importar", body, actions});
   }
